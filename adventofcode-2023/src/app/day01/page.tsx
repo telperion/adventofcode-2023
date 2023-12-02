@@ -36,7 +36,7 @@ const FileDrop: React.FC<FileDropProps> = (props) => {
         const reader = new FileReader();
    
         reader.onloadend = () => {
-          console.log(reader.result);
+          // console.log(reader.result);
           setData(reader.result ? reader.result.toString() : "");
           props.passData(reader.result ? reader.result.toString() : "");
         };
@@ -76,10 +76,10 @@ export default function Day01Component() {
     const [result2, setResult2] = useState<string>("");
 
     useEffect(() => {
-        var digits: Array<{ first: number; last: number }> = [];
+        var digits: Array<{ line: string, first: number; last: number }> = [];
         var total: number = 0;
 
-        console.log(data.split("\n"))
+        // console.log(data.split("\n"))
 
         for (let s of data.split("\n"))
         {
@@ -95,6 +95,7 @@ export default function Day01Component() {
             if (f >= 0 && l >= 0)
             {
                 digits.push({
+                    line: s,
                     first: f,
                     last: l
                 })
@@ -102,11 +103,73 @@ export default function Day01Component() {
         }
 
         digits.forEach(element => {
-            total += (element.first + 10) + (element.last);
+            total += (element.first * 10) + (element.last);
             console.log(`first: ${element.first}, last: ${element.last} -> total: ${total}`);
         })
 
         setResult1(total.toString());
+
+        digits = [];
+        total = 0;
+
+        const digitMap = new Map([
+            ["zero",  0],
+            ["one",   1],
+            ["two",   2],
+            ["three", 3],
+            ["four",  4],
+            ["five",  5],
+            ["six",   6],
+            ["seven", 7],
+            ["eight", 8],
+            ["nine",  9],
+            ["0", 0],
+            ["1", 1],
+            ["2", 2],
+            ["3", 3],
+            ["4", 4],
+            ["5", 5],
+            ["6", 6],
+            ["7", 7],
+            ["8", 8],
+            ["9", 9]
+        ]);
+        console.log(digitMap);
+
+        for (let s of data.split("\n"))
+        {
+            var f = -1;
+            var l = -1;
+            digitMap.forEach((v, k) => {
+                let fi = s.indexOf(k), li = s.lastIndexOf(k);
+                //console.log(`${k}: ${v} - ${fi}, ${li}`)
+                if ((fi != -1) && ((fi < f) || (f == -1)))
+                {
+                    f = v;
+                }
+                if ((li != -1) && ((li > l) || (l == -1)))
+                {
+                    l = v;
+                }
+            })
+            if (f >= 0 && l >= 0)
+            {
+                digits.push({
+                    line: s,
+                    first: f,
+                    last: l
+                })
+            }
+        }
+
+        digits.forEach(element => {
+            total += (element.first * 10) + (element.last);
+            console.log(`first: ${element.first}, last: ${element.last} -> total: ${total} (line: ${element.line})`);
+        })
+
+        setResult2(total.toString());
+
+
 
     }, [data])
     
