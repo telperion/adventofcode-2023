@@ -1,74 +1,9 @@
 "use client";
 
-import React, { DragEvent, useEffect, useState } from 'react';
+const title = "Day 1: Trebuchet?!"
 
-type FileDropProps = {
-    passData: (d: string) => void;
-}
-
-const FileDrop: React.FC<FileDropProps> = (props) => {
-    // https://claritydev.net/blog/react-typescript-drag-drop-file-upload-guide
-    const [isOver, setIsOver] = useState(false);
-    const [files, setFiles] = useState<File[]>([]);
-    const [data, setData] = useState<string>("");
-   
-    // Define the event handlers
-    const handleDragOver = (event: DragEvent<HTMLDivElement>) => {
-      event.preventDefault();
-      setIsOver(true);
-    };
-   
-    const handleDragLeave = (event: DragEvent<HTMLDivElement>) => {
-      event.preventDefault();
-      setIsOver(false);
-    };
-   
-    const handleDrop = (event: DragEvent<HTMLDivElement>) => {
-      event.preventDefault();
-      setIsOver(false);
-   
-      // Fetch the files
-      const droppedFiles = Array.from(event.dataTransfer.files);
-      setFiles(droppedFiles);
-   
-      // Use FileReader to read file content
-      droppedFiles.forEach((file) => {
-        const reader = new FileReader();
-   
-        reader.onloadend = () => {
-          // console.log(reader.result);
-          setData(reader.result ? reader.result.toString() : "");
-          props.passData(reader.result ? reader.result.toString() : "");
-        };
-   
-        reader.onerror = () => {
-          console.error('There was an issue reading the file.');
-        };
-   
-        reader.readAsText(file, 'UTF-8');
-        return reader;
-      });
-    };
-        
-    return (
-        <div
-            onDragOver={handleDragOver}
-            onDragLeave={handleDragLeave}
-            onDrop={handleDrop}
-            style={{
-                display: 'flex',
-                justifyContent: 'center',
-                alignItems: 'center',
-                height: '60px',
-                width: '300px',
-                border: '1px dotted',
-                backgroundColor: isOver ? 'lightgray' : 'darkgray',
-            }}
-        >
-            Drag and drop the input data here
-        </div>
-    )
-}
+import React, { useEffect, useState } from 'react';
+import FileDrop from 'src/app/refs/filedrop';
 
 export default function Day01Component() {
     const [data, setData] = useState<string>("");
@@ -76,10 +11,11 @@ export default function Day01Component() {
     const [result2, setResult2] = useState<string>("");
 
     useEffect(() => {
+        /*************************************************************/
+        // Part 1 begin
+
         var digits: Array<{ line: string, first: number; last: number }> = [];
         var total: number = 0;
-
-        // console.log(data.split("\n"))
 
         for (let s of data.split("\n"))
         {
@@ -108,6 +44,10 @@ export default function Day01Component() {
         })
 
         setResult1(total.toString());
+
+        // Part 1 end
+        /*************************************************************/
+        // Part 2 begin
 
         digits = [];
         total = 0;
@@ -171,19 +111,22 @@ export default function Day01Component() {
 
         setResult2(total.toString());
 
-
-
+        // Part 2 end
+        /*************************************************************/
     }, [data])
     
     return (
-        <>
+        <div className="h-screen flex flex-col items-center justify-center gap-6">
+            <div className="flex text-3xl">{title}</div>
             <FileDrop passData={(d: string) => {setData(d)}} />
-            <div>
-                <h1>Result 1: {result1}</h1>
+            <div className="flex basis-1/12 flex-row items-center justify-center w-3/4">
+                <div className="min-w-fit p-6">Result 1:&nbsp;</div>
+                <div className="grow text-right bg-slate-900 p-6">{result1}</div>
             </div>
-            <div>
-                <h1>Result 2: {result2}</h1>
+            <div className="flex basis-1/12 flex-row items-center justify-center w-3/4">
+                <div className="min-w-fit p-6">Result 2:&nbsp;</div>
+                <div className="grow text-right bg-slate-900 p-6">{result2}</div>
             </div>
-        </>
+        </div>
     )
 }
