@@ -140,18 +140,20 @@ export default function Day01Component() {
         {
             var f = -1;
             var l = -1;
-            digitMap.forEach((v, k) => {
-                let fi = s.indexOf(k), li = s.lastIndexOf(k);
-                //console.log(`${k}: ${v} - ${fi}, ${li}`)
-                if ((fi != -1) && ((fi < f) || (f == -1)))
-                {
-                    f = v;
-                }
-                if ((li != -1) && ((li > l) || (l == -1)))
-                {
-                    l = v;
-                }
-            })
+            for (let i = 0; i < s.length; i++)
+            {
+                digitMap.forEach((v, k) => {
+                    //console.log(`${k}: ${v} - ${fi}, ${li}`)
+                    if (f == -1 && s.substr(           i, k.length) == k)
+                    {
+                        f = v;
+                    }
+                    if (l == -1 && s.substr(s.length-i-1, k.length) == k)
+                    {
+                        l = v;
+                    }
+                })
+            }
             if (f >= 0 && l >= 0)
             {
                 digits.push({
