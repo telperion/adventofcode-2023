@@ -57,7 +57,45 @@ export default function Day01Component() {
         /*************************************************************/
         // Part 2 begin
 
-        setResult2(totalIDCheck.toString());
+        var totalBagPower = 0;
+
+        for (let s of data.split("\n"))
+        {
+            var gameRecord = s.match("Game (\\d+): (.*)")
+            if (!gameRecord) { console.log(`Couldn't match ${s} to cube game format`); continue; }
+            var gameIndex = parseInt(gameRecord[1])
+            var minBagContents = new Map<string, number>([
+                ["red", 0],
+                ["green", 0],
+                ["blue", 0]
+            ])
+            var bagPower = 1;
+
+            for (let d of gameRecord[2].split("; "))
+            {
+                for (let p of d.split(", "))
+                {
+                    var pull = p.match("(\\d+) (\\w+)")
+                    if (!pull || pull.length < 3) { console.log(`Couldn't match ${p} to cube pull format`); continue; }
+                    var bagHas = minBagContents.get(pull[2]);
+                    var bagNeeds = parseInt(pull[1]);
+                    if (bagNeeds > (bagHas ? bagHas : 0))
+                    {
+                        minBagContents.set(pull[2], bagNeeds);
+                    }
+                }
+            }
+
+            minBagContents.forEach( (n, color) => {
+                console.log(`${color}: ${n}`)
+                bagPower *= n;
+            })
+
+            console.log(`Game ${gameIndex} requires ${minBagContents} (power: ${bagPower})`)
+            totalBagPower += bagPower;
+        }
+
+        setResult2(totalBagPower.toString());
 
         // Part 2 end
         /*************************************************************/
