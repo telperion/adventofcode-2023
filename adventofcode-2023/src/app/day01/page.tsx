@@ -3,7 +3,7 @@
 const title = "Day 1: Trebuchet?!"
 
 import React, { useEffect, useState } from 'react';
-import FileDrop from 'src/app/refs/filedrop';
+import FileDrop from '../refs/filedrop';
 
 export default function Day01Component() {
     const [data, setData] = useState<string>("");
