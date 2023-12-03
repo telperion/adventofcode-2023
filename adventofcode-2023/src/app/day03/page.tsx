@@ -103,6 +103,93 @@ export default function Day01Component() {
         /*************************************************************/
         // Part 2 begin
 
+        type GearType = {
+            x: number,
+            y: number,
+            teeth: Array<string>,
+            ratio: number
+        };
+
+        var gears: Array<GearType> = [];
+        var gearParts: Array<PartType> = [];
+
+        var lines = data.split("\n")
+        lines.forEach( (l, y) => {
+            var newPart: PartType | null = null;
+            l.split("").forEach( (c, x) => {
+                if (c >= "0" && c <= "9")
+                {
+                    if (!newPart)
+                    {
+                        newPart = {
+                            x: x,
+                            y: y,
+                            part: "",
+                            isPart: false
+                        };
+                    }
+                    newPart.part += c;
+                }
+                else
+                {
+                    if (newPart)
+                    {
+                        gearParts.push(newPart);
+                        newPart = null;
+                    }
+                }
+            })
+            if (newPart)
+            {
+                gearParts.push(newPart);
+                newPart = null;
+            }
+        })
+        console.log(gearParts.length)
+
+        lines.forEach( (l, y) => {
+            l.split("").forEach( (c, x) => {
+                if (c == "*")
+                {
+                    var potentialGear: GearType = {
+                        x: x,
+                        y: y,
+                        teeth: [],
+                        ratio: 0
+                    }
+
+                    // Adjacency requirement
+                    for (let i = gearParts.length - 1; i >= 0; i--) {
+                        var part = gearParts[i];
+                        var dx = x - part.x;
+                        var dy = y - part.y;
+                        if (dy >= -1 && dy <= 1)
+                        {
+                            // On the same or adjacent line
+                            if (dx >= -1 && dx <= part.part.length)
+                            {
+                                // Within one column of beginning-to-end range of part number
+                                potentialGear.teeth.push(part.part);
+                            }
+                        }
+                    }
+
+                    if (potentialGear.teeth.length == 2)
+                    {
+                        potentialGear.ratio = parseInt(potentialGear.teeth[0]) * parseInt(potentialGear.teeth[1]);
+                        console.log(`Gear located at ${x}, ${y} (teeth: ${potentialGear.teeth[0]} * ${potentialGear.teeth[1]} = ${potentialGear.ratio})`)
+                        gears.push(potentialGear);
+                    }
+                }
+            })
+        })
+
+        var totalGearRatios = 0;
+        gears.forEach( (gear) => {
+            totalGearRatios += gear.ratio;
+        })        
+
+        setResult2(totalGearRatios.toString());
 
         // Part 2 end
         /*************************************************************/
