@@ -3,6 +3,7 @@
 const title = "Day 3: Gear Ratios"
 
 import React, { useEffect, useState } from 'react';
+import Link from 'next/link'
 import FileDrop from '../refs/filedrop';
 
 export default function Day01Component() {
@@ -206,6 +207,7 @@ export default function Day01Component() {
                 <div className="min-w-fit p-6">Result 2:&nbsp;</div>
                 <div className="grow text-right bg-slate-900 p-6">{result2}</div>
             </div>
+            <Link className="flex text-xl underline text-slate-400 hover:text-slate-100" href="/">Return home</Link>
         </div>
     )
 }
