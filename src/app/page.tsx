@@ -24,10 +24,10 @@ export default function Navigation() {
       </div>
       <div className="w-5/6 mx-auto grid grid-cols-7 grid-flow-row-dense gap-6">
         {blanks.map((i) => (
-            <div key={`blank-${i}`}className="rounded-md min-w-fit bg-lime-950 p-6"></div>
+            <div key={`blank-${i}`}className="rounded-md min-w-fit bg-lime-950 p-2"></div>
         ))}
         {days.map((d) => (
-            <Link key={d} href={`/day${d}`} className="rounded-md min-w-fit text-center bg-lime-900 hover:bg-lime-600 p-6">Day {d}</Link>
+            <Link key={d} href={`/day${d}`} className="rounded-md min-w-fit text-center bg-lime-900 hover:bg-lime-600 p-2"><span className="hidden md:inline">Day </span>{d}</Link>
         ))}
       </div>
     </main>
