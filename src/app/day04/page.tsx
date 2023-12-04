@@ -1,15 +1,15 @@
-"use client";
+"use client"
 
 const title = "Day 4: Scratchcards"
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState } from 'react'
 import Link from 'next/link'
-import FileDrop from '../refs/filedrop';
+import FileDrop from '../refs/filedrop'
 
 export default function Day01Component() {
-    const [data, setData] = useState<string>("");
-    const [result1, setResult1] = useState<string>("");
-    const [result2, setResult2] = useState<string>("");
+    const [data, setData] = useState<string>("")
+    const [result1, setResult1] = useState<string>("")
+    const [result2, setResult2] = useState<string>("")
 
     useEffect(() => {
         /*************************************************************/
@@ -19,10 +19,12 @@ export default function Day01Component() {
             index: number,
             winners: Array<number>,
             choices: Array<number>,
-            score: number
+            matches: Array<number>,
+            score: number,
+            copies: number
         };
 
-        var scratches: Array<ScratchType> = [];
+        var scratches: Array<ScratchType> = []
 
         var lines = data.split("\n")
         lines.forEach( (l) => {
@@ -44,7 +46,9 @@ export default function Day01Component() {
                 index: index,
                 winners: winners,
                 choices: choices,
-                score: (matches.length == 0) ? 0 : 2**(matches.length-1)
+                matches: matches,
+                score: (matches.length == 0) ? 0 : 2**(matches.length-1),
+                copies: 1
             }
             console.log(`${index}: ${matches} = ${newScratch.score}`)
             scratches.push(newScratch)
@@ -52,16 +56,31 @@ export default function Day01Component() {
         
         var totalScore = 0;
         scratches.forEach( (scratch) => {
-            totalScore += scratch.score;
+            totalScore += scratch.score
         })
 
-        setResult1(totalScore.toString());
+        setResult1(totalScore.toString())
 
         // Part 1 end
         /*************************************************************/
         // Part 2 begin
 
-        //setResult2(totalScore.toString());
+        for (let i = 0; i < scratches.length; i++)
+        {
+            console.log(`${scratches[i].copies} copies of card ${i+1} matched ${scratches[i].matches.length}!`)
+            for(let cascade = 1; cascade <= scratches[i].matches.length; cascade++)
+            {
+                console.log(`>>> Won ${scratches[i].copies} more copies of card ${i + cascade + 1}!`)
+                scratches[i + cascade].copies += scratches[i].copies
+            }
+        }
+        
+        var totalCopies = 0;
+        scratches.forEach( (scratch) => {
+            totalCopies += scratch.copies
+        })
+
+        setResult2(totalCopies.toString())
 
         // Part 2 end
         /*************************************************************/
