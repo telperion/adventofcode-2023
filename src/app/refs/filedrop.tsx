@@ -52,7 +52,7 @@ const FileDrop: React.FC<FileDropProps> = (props) => {
         
     return (
         <div
-            className="flex rounded-md p-6 basis-1/4 w-3/4 items-center justify-center bg-slate-800 hover:bg-slate-500"
+            className="flex rounded-md p-6 basis-1/4 w-3/4 items-center justify-center bg-lime-900 hover:bg-lime-600"
             onDragOver={handleDragOver}
             onDragLeave={handleDragLeave}
             onDrop={handleDrop}

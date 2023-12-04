@@ -122,13 +122,13 @@ export default function Day01Component() {
             <FileDrop passData={(d: string) => {setData(d)}} />
             <div className="flex basis-1/12 flex-row items-center justify-center w-3/4">
                 <div className="min-w-fit p-6">Result 1:&nbsp;</div>
-                <div className="grow text-right bg-slate-900 p-6">{result1}</div>
+                <div className="grow text-right bg-lime-950 p-6">{result1}</div>
             </div>
             <div className="flex basis-1/12 flex-row items-center justify-center w-3/4">
                 <div className="min-w-fit p-6">Result 2:&nbsp;</div>
-                <div className="grow text-right bg-slate-900 p-6">{result2}</div>
+                <div className="grow text-right bg-lime-950 p-6">{result2}</div>
             </div>
-            <Link className="flex text-xl underline text-slate-400 hover:text-slate-100" href="/">Return home</Link>
+            <Link className="flex text-xl underline text-lime-500 hover:text-lime-200" href="/">Return home</Link>
         </div>
     )
 }
