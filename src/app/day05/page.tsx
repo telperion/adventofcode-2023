@@ -6,10 +6,66 @@ import React, { useEffect, useState } from 'react'
 import Link from 'next/link'
 import FileDrop from '../refs/filedrop'
 
-type RangeMap = {
-    dst: number,
-    src: number,
+class RangeMap {
+    src: number
+    off: number     // destination - source
     len: number
+
+    constructor(s: number, o: number, l: number) {
+        this.src = s
+        this.off = o
+        this.len = l
+    }
+
+    mapRange(n: number): number | null {
+        if (n >= this.src && n < this.src + this.len)
+        {
+            return n + this.off
+        }
+        else
+        {
+            return null
+        }
+    }
+
+    toString() : string {
+        return `${this.src} ~ ${this.src + this.len - 1} (offset ${this.off})`
+    }
+
+    refine(range: RangeMap): Array<RangeMap> {
+        // Return a copy of this range after subtracting the span of the 
+        // given range, splitting that copy into to two ranges if necessary.
+        var ret = new Array<RangeMap>()
+        var endThis = this.src + this.len - 1
+        var endOther = range.src + range.len - 1
+        if (endThis < range.src)
+        {
+            // Beginning of cut range lies after this range - no change.
+            ret.push(new RangeMap(this.src, this.off, this.len))
+        }
+        else if (this.src > endOther)
+        {
+            // End of cut range lies before this range - no change.
+            ret.push(new RangeMap(this.src, this.off, this.len))
+        }
+        else if (this.src >= range.src && endThis <= endOther)
+        {
+            // Cut range contains this entire range and will subsume it.
+            ret.push(new RangeMap(this.src, range.off, this.len))
+        }
+        else
+        {
+            // Cut range overlaps this range by some amount.
+            var mStart = Math.max(this.src, range.src)
+            var lSide = new RangeMap(this.src, this.off, range.src - this.src)
+            var mSide = new RangeMap(mStart, range.off, Math.min(endThis, endOther) - mStart + 1)
+            var rSide = new RangeMap(range.src + range.len, this.off, endThis - endOther)
+            if (lSide.len > 0) { ret.push(lSide) }
+            ret.push(mSide)
+            if (rSide.len > 0) { ret.push(rSide) }
+        }
+        return ret
+    }
 }
 
 type AlmanacInstruction = {
@@ -27,7 +83,7 @@ function instToString(inst: AlmanacInstruction) {
 }
 
 enum AlmanacPhase {
-    SEED,
+    SEED = 0,
     SOIL,
     FERTILIZER,
     WATER,
@@ -74,17 +130,6 @@ const AlmanacHeadings = new Map<string, AlmanacPhase>([
 const almanacTranslation = new Map<AlmanacPhase, string>()
 AlmanacHeadings.forEach((v, k) => almanacTranslation.set(v, k))
 
-function mapRange(n: number, range: RangeMap): number | null {
-    if (n >= range.src && n < range.src + range.len)
-    {
-        return n + (range.dst - range.src)
-    }
-    else
-    {
-        return null
-    }
-}
-
 
 export default function Day01Component() {
     const [data, setData] = useState<string>("")
@@ -106,7 +151,7 @@ export default function Day01Component() {
                 if (l.startsWith(heading))
                 {
                     almanac = phase
-                    console.log(l)
+                    // console.log(l)
                 }
             })
             
@@ -128,20 +173,20 @@ export default function Day01Component() {
             // Run maps as appropriate
             var mapMatch = l.match(/(\d+) (\d+) (\d+)/)
             if (mapMatch) {
-                var range: RangeMap = {
-                    dst: parseInt(mapMatch[1]),
-                    src: parseInt(mapMatch[2]),
-                    len: parseInt(mapMatch[3]),
-                }
-                console.log(`Range: ${range.dst} <-- ${range.src} (length ${range.len})`)
+                var range = new RangeMap(
+                    parseInt(mapMatch[2]),
+                    parseInt(mapMatch[1]) - parseInt(mapMatch[2]),
+                    parseInt(mapMatch[3])
+                )
+                // console.log(`Range: ${range.src} ~ ${range.src + range.off} (length ${range.len})`)
                 seeds.forEach( (s) => {
-                    console.log(`--- ${instToString(s)}`)
+                    // console.log(`--- ${instToString(s)}`)
                     var n = getThisPhase(almanac - 1, s)
-                    var d = mapRange(n, range)
+                    var d = range.mapRange(n)
                     if (d)
                     {
                         setThisPhase(almanac, s, d)
-                        console.log(`--- Seed with ${almanacTranslation.get(almanac - 1)} ${n} gets ${almanacTranslation.get(almanac)} ${d}`)
+                        // console.log(`--- Seed with ${almanacTranslation.get(almanac - 1)} ${n} gets ${almanacTranslation.get(almanac)} ${d}`)
                     }
                 })
             }
@@ -159,7 +204,76 @@ export default function Day01Component() {
         /*************************************************************/
         // Part 2 begin
 
-        // setResult2(totalCopies.toString())
+        almanac = AlmanacPhase.SEED
+        var almanacTransforms = new Array<Array<RangeMap>>()
+        for (let phase in AlmanacPhase)
+        {
+            almanacTransforms.push(new Array<RangeMap>())
+        }
+
+        lines.forEach( (l) => {
+            // Run state machine
+            AlmanacHeadings.forEach( (phase, heading) => {
+                if (l.startsWith(heading))
+                {
+                    almanac = phase
+                    // console.log(l)
+                    for (let r of almanacTransforms[phase-1]) {
+                        // console.log(`${r}`)
+                        almanacTransforms[phase].push(new RangeMap(r.src + r.off, 0, r.len))
+                    }
+                }
+            })
+            
+            // Collect seed list
+            if (almanac == AlmanacPhase.SEED) {
+                if (l.startsWith("seeds:")) {
+                    var seedListing = new Array<number>()
+                    l.substr(6)
+                     .split(/\s+/)
+                     .filter( (s) => (s != "") )
+                     .forEach( (s) => {
+                        seedListing.push(parseInt(s))
+                    })
+                    for (let i = 0; i < seedListing.length; i += 2)
+                    {
+                        var s = seedListing[i]
+                        var v = seedListing[i+1]
+                        almanacTransforms[AlmanacPhase.SEED].push(new RangeMap(s, 0, v))
+                        // console.log(`>>> ${s} for len ${v}`)
+                    }
+                }
+            }
+
+            // Run maps as appropriate
+            var mapMatch = l.match(/^\s*(\d+)\s*(\d+)\s*(\d+)\s*$/)
+            if (mapMatch) {
+                var range = new RangeMap(
+                    parseInt(mapMatch[2]),
+                    parseInt(mapMatch[1]) - parseInt(mapMatch[2]),
+                    parseInt(mapMatch[3])
+                )
+                // console.log(`Range: ${range}`)
+                for (let i = almanacTransforms[almanac].length - 1; i >= 0; i--)
+                {
+                    var previous = almanacTransforms[almanac][i]
+                    almanacTransforms[almanac].splice(i, 1)
+                    var refined = previous.refine(range)
+                    refined.forEach( (r) => {
+                        almanacTransforms[almanac].push(r)
+                        // console.log(`--- Split: ${r}`)
+                    })
+                }
+            }
+        })
+        
+        var minLocation = Infinity;
+        almanacTransforms[AlmanacPhase.LOCATION].forEach( (s) => {
+            var thisLocation = s.src + s.off
+            minLocation = (minLocation < thisLocation) ? minLocation : thisLocation
+        })
+
+        setResult2(minLocation.toString())
 
         // Part 2 end
         /*************************************************************/
