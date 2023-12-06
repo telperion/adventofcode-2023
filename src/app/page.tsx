@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 
-const latestDay = 5;
+const latestDay = 6;
 const blankLead = 5;
 var days: Array<string> = [];
 for (let i = 1; i <= latestDay; i++)
