@@ -17,21 +17,36 @@ enum HandType {
     FIVEOFAKIND
 }
 
-const cardValue = "23456789TJQKA"
+const cardValue1 = "23456789TJQKA"
+const cardValue2 = "J23456789TQKA"
 
 class CamelHand {
     hand: string
     bid: number
     handType: HandType
+    useJokers: boolean
 
-    static analyzeHand(s: string): HandType {
+    static analyzeHand(s: string, useJokers: boolean = false): HandType {
         var counts = new Map<string, number>()
         s.split("").forEach( (c) => {
             var v = counts.get(c)
             counts.set(c, (v ? v : 0) + 1)
         })
-        var freqs = Array.from(counts.keys()).sort((l, r) => (counts.get(r)! - counts.get(l)!))
+        var j: number = 0
+        if (useJokers) {
+            j = counts.get("J") || 0
+            counts.delete("J")
+        }
+        var freqs = Array.from(counts.keys()).sort((l, r) => ((counts.get(r) || 0) - (counts.get(l) || 0)))
         console.log(freqs)
+
+        // 4 and 1 > 3 and 2; 3 and 1 > 2 and 2.
+        // Therefore, the best place to assign the jokers is to
+        // tack on extras of whichever card leads in frequency.
+        if (useJokers) {
+            counts.set(freqs[0], (counts.get(freqs[0]) || 0) + j)
+        }
+
         if (counts.get(freqs[0]) == 5)      { return HandType.FIVEOFAKIND  }
         else if (counts.get(freqs[0]) == 4) { return HandType.FOUROFAKIND  }
         else if (counts.get(freqs[0]) == 3) {
@@ -45,10 +60,11 @@ class CamelHand {
         else                                { return HandType.HIGHCARD     }
     }
 
-    constructor(h: string, b: number) {
+    constructor(h: string, b: number, useJokers: boolean = false) {
         this.hand = h
         this.bid = b
-        this.handType = CamelHand.analyzeHand(h)
+        this.useJokers = useJokers
+        this.handType = CamelHand.analyzeHand(h, useJokers)
     }
 
     static compare(l: CamelHand, r: CamelHand) {
@@ -59,8 +75,8 @@ class CamelHand {
             for (let i = 0; i < l.hand.length; i++)
             {
                 // TODO: map ordering of cards
-                var cl = cardValue.indexOf(l.hand[i])
-                var cr = cardValue.indexOf(r.hand[i])
+                var cl = (l.useJokers && cardValue2 || cardValue1).indexOf(l.hand[i])
+                var cr = (r.useJokers && cardValue2 || cardValue1).indexOf(r.hand[i])
                 if      (cl < cr) {return -1}
                 else if (cl > cr) {return  1}
             }
@@ -110,7 +126,26 @@ export default function Day07Component() {
         /*************************************************************/
         // Part 2 begin
 
-        // setResult2(totalWaysToBeat.toString())
+        var handsWithJokers = Array<CamelHand>()
+
+        lines.forEach( (l) => {
+            if (l.trim() != "")
+            {
+                var hand = l.substr(0, 5)
+                var bid = parseInt(l.substr(6))
+                handsWithJokers.push(new CamelHand(hand, bid, true))
+            }
+        })
+
+        handsWithJokers = handsWithJokers.sort(CamelHand.compare)
+        var totalWinningsWithJokers = 0
+        for (let i = 0; i < handsWithJokers.length; i++)
+        {
+            console.log(handsWithJokers[i].toString())
+            totalWinningsWithJokers += handsWithJokers[i].bid * (i+1)
+        }
+
+        setResult2(totalWinningsWithJokers.toString())
 
         // Part 2 end
         /*************************************************************/
