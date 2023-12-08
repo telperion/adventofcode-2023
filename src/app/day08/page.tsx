@@ -89,6 +89,16 @@ class GhostCycle {
     }
 }
 
+function gcd(a: number, b: number): number {
+    if (b < a)  { return gcd(b, a) }
+    if (a == 0) { return     b     }
+    return gcd(b % a, a)
+}
+
+function lcm(a: number, b: number): number {
+    return (a / gcd(a, b)) * b
+}
+
 export default function Day08Component() {
     const [data, setData] = useState<string>("")
     const [result1, setResult1] = useState<string>("")
@@ -158,25 +168,30 @@ export default function Day08Component() {
                     }
                     if (thisTurn == "L") { currentLocation = currentNode.l }
                     else                 { currentLocation = currentNode.r }
-                    console.log(`--- ${i}   ${thisTurn}: ${lastLocation} -> ${currentLocation}`)
+                    // console.log(`--- ${i}   ${thisTurn}: ${lastLocation} -> ${currentLocation}`)
                     i++
 
                     // Cycle detection
                     if (ghostLoops.get(startingNode)?.append(currentLocation, i, turns.length))
                     {
+                        var gc = ghostLoops.get(startingNode)
+                        console.log(`The ghost starting at ${startingNode} found a cycle at ${gc?.cycleStart} lasting ${gc?.cycleLength} steps and crossing ${Array.from(gc?.crossings.keys() || []).filter( (s) => (s[2] == "Z") ).length} possible end nodes.`)
                         break
                     }
                 }
             }
         })
 
+        var lcmForAll = 0
         ghostLoops.forEach( (gc, startingNode) => {
-            var gcEnds = gc.findAllEnds(1000000000000)
+            var gcEnds = gc.findAllEnds(1000000)
             console.log(gc.path)
             console.log(gcEnds)
             ghostEnds.push(gcEnds)
+            lcmForAll = (lcmForAll == 0) ? gc.cycleLength : lcm(gc.cycleLength, lcmForAll)
         })
         ghostEnds.sort((l, r) => (l.length < r.length ? -1 : 1))
+        console.log(lcmForAll.toString())
 
         var validEndStep = -1
         if (ghostEnds.length > 0) {
@@ -197,7 +212,8 @@ export default function Day08Component() {
             }
         }
 
-        setResult2(validEndStep.toString())
+        // FOR SOME REASON THIS WAS RIGHT BUT I DON'T BELIEVE IT YET.
+        setResult2(lcmForAll.toString())
 
         // Part 2 end
         /*************************************************************/
