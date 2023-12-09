@@ -63,8 +63,22 @@ export default function Day09Component() {
         // Part 1 end
         /*************************************************************/
         // Part 2 begin
+        var totalContinuations: number = 0
 
-        //setResult2(lcmForAll.toString())
+        lines.forEach( (l) => {
+            var seq: Array<number> = l.split(/\s+/)
+                                      .filter((v) => (v != ""))
+                                      .map((v) => (parseInt(v)))
+            if (seq.length < 2) {
+                return
+            }
+            seq = seq.reverse()
+            var c: number = seq[seq.length-1] + continueSequence(seq)
+            console.log(`${seq}: ${c}`)
+            totalContinuations += c
+        })
+
+        setResult2(totalContinuations.toString())
 
         // Part 2 end
         /*************************************************************/
