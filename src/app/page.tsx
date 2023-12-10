@@ -2,17 +2,17 @@
 
 import Link from 'next/link'
 
-const latestDay = 9;
-const blankLead = 5;
+const latestDay = 10
+const blankLead = 5
 var days: Array<string> = [];
 for (let i = 1; i <= latestDay; i++)
 {
-  days.push(String(i).padStart(2, "0"));
+  days.push(String(i).padStart(2, "0"))
 }
-var blanks: Array<number> = [];
+var blanks: Array<number> = []
 for (let i = 1; i <= blankLead; i++)
 {
-  blanks.push(i);
+  blanks.push(i)
 }
  
 export default function Navigation() {
