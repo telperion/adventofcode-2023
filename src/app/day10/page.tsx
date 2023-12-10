@@ -69,10 +69,10 @@ export default function Day09Component() {
 
                 switch (lines[r][c])
                 {
-                    case "S":   fillDistanceOps.push({r: r,   c: c-1, fill: fill+1})
-                                fillDistanceOps.push({r: r,   c: c+1, fill: fill+1})
-                                fillDistanceOps.push({r: r-1, c: c,   fill: fill+1})
-                                fillDistanceOps.push({r: r+1, c: c,   fill: fill+1})
+                    case "S":   if (c > 0        && ["-", "L", "F"].includes(lines[r][c-1])) { fillDistanceOps.push({r: r,   c: c-1, fill: fill+1}) }
+                                if (c < width-1  && ["-", "J", "7"].includes(lines[r][c+1])) { fillDistanceOps.push({r: r,   c: c+1, fill: fill+1}) }
+                                if (r > 0        && ["|", "7", "F"].includes(lines[r-1][c])) { fillDistanceOps.push({r: r-1, c: c,   fill: fill+1}) }
+                                if (r < height-1 && ["|", "L", "J"].includes(lines[r+1][c])) { fillDistanceOps.push({r: r+1, c: c,   fill: fill+1}) }
                                 break
                     case "|":   fillDistanceOps.push({r: r-1, c: c,   fill: fill+1})
                                 fillDistanceOps.push({r: r+1, c: c,   fill: fill+1})
@@ -110,10 +110,13 @@ export default function Day09Component() {
 
         console.log("[")
         var debugAcc = ""
+        var testLoopness = new Map<number, number>()
         landscape.forEach((l) => {
-            var thisLine = l.map((v) => (v == Infinity ? "XXXX" : v.toString().padStart(5-v.toString().length, "0"))).join(", ")
+            var thisLine = l.map((v) => (v == Infinity ? "-100" : v.toString().padStart(4, " "))).join(", ")
             console.log(thisLine)
             debugAcc += thisLine + "\n"
+
+            l.forEach((v) => {testLoopness.set(v, 1 + (testLoopness.get(v) || 0))})
         })
         console.log("]")
 
@@ -122,6 +125,12 @@ export default function Day09Component() {
                 (a, b) => Math.max(a, b)
             , 0))
         , 0)
+
+        testLoopness.forEach((v, k) => {
+            if (v != 2) {
+                console.log(`A distance of ${k} occurred ${v} times in the loop`)
+            }
+        })
 
         setResult1(maxDistance.toString())
         setDebugDisplay(debugAcc)
@@ -162,13 +171,9 @@ export default function Day09Component() {
                 <div className="min-w-fit p-6">Result 2:&nbsp;</div>
                 <div className="grow text-right bg-lime-950 p-6">{result2}</div>
             </div>
-            <div className="flex basis-1/2 flex-row items-center justify-center w-3/4">
+            <div className="hidden flex basis-1/2 flex-row items-center justify-center w-3/4">
                 <div className="min-w-fit p-6">Debug:&nbsp;</div>
-                <div className="grow text-right bg-lime-950 p-6 font-mono">
-                    {debugDisplay.split("\n").map((s, key) => {
-                        return <div key={key}>{s}</div>
-                    })}
-                </div>
+                <div className="grow text-right bg-lime-950 p-6 font-mono text-xs whitespace-pre">{debugDisplay}</div>
             </div>
             <Link className="flex text-xl underline text-lime-500 hover:text-lime-200" href="/">Return home</Link>
         </div>
