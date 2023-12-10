@@ -5,9 +5,6 @@ const title = "Day 10: Pipe Maze"
 import React, { useEffect, useState } from 'react'
 import Link from 'next/link'
 import FileDrop from '../refs/filedrop'
-import internal from 'stream'
-import { isStringObject } from 'util/types'
-import { debug } from 'console'
 
 export default function Day09Component() {
     const [data, setData] = useState<string>("")
@@ -45,7 +42,7 @@ export default function Day09Component() {
             c: number
             fill: number
         }
-        var fillDistanceOps: Stack<FillDistanceOperation> = []
+        var fillDistanceOps: Array<FillDistanceOperation> = []
         
         function fillDistanceMemo(r: number, c: number, fill: number) {
             if ((r < 0) || (r >= height)) {
@@ -69,10 +66,10 @@ export default function Day09Component() {
 
                 switch (lines[r][c])
                 {
-                    case "S":   if (c > 0        && ["-", "L", "F"].includes(lines[r][c-1])) { fillDistanceOps.push({r: r,   c: c-1, fill: fill+1}) }
-                                if (c < width-1  && ["-", "J", "7"].includes(lines[r][c+1])) { fillDistanceOps.push({r: r,   c: c+1, fill: fill+1}) }
-                                if (r > 0        && ["|", "7", "F"].includes(lines[r-1][c])) { fillDistanceOps.push({r: r-1, c: c,   fill: fill+1}) }
-                                if (r < height-1 && ["|", "L", "J"].includes(lines[r+1][c])) { fillDistanceOps.push({r: r+1, c: c,   fill: fill+1}) }
+                    case "S":   if (c > 0        && "-LF".includes(lines[r][c-1])) { fillDistanceOps.push({r: r,   c: c-1, fill: fill+1}) }
+                                if (c < width-1  && "-J7".includes(lines[r][c+1])) { fillDistanceOps.push({r: r,   c: c+1, fill: fill+1}) }
+                                if (r > 0        && "|7F".includes(lines[r-1][c])) { fillDistanceOps.push({r: r-1, c: c,   fill: fill+1}) }
+                                if (r < height-1 && "|LJ".includes(lines[r+1][c])) { fillDistanceOps.push({r: r+1, c: c,   fill: fill+1}) }
                                 break
                     case "|":   fillDistanceOps.push({r: r-1, c: c,   fill: fill+1})
                                 fillDistanceOps.push({r: r+1, c: c,   fill: fill+1})
@@ -138,22 +135,69 @@ export default function Day09Component() {
         // Part 1 end
         /*************************************************************/
         // Part 2 begin
-        var totalContinuations: number = 0
 
-        lines.forEach( (l) => {
-            var seq: Array<number> = l.split(/\s+/)
-                                      .filter((v) => (v != ""))
-                                      .map((v) => (parseInt(v)))
-            if (seq.length < 2) {
-                return
+        // Travel each row horizontally and look for pipe crossings.
+        // Crossing a pipe that's part of the loop (landscape value finite)
+        // means we flip parity between being inside or outside the loop.
+        // If we cross a |, we flip for sure.
+        // If we cross a L, we need to pair it with a 7 to engage a parity flip.
+        // Same for      F                        and J.
+        var groundLabeled = new Array<string>(lines.length).fill("")
+
+        // I don't think the rules were super clear about this.
+        // Is the animal living in a ground nest, or can the nest contain pipes?
+        const onlyGround = false
+
+        var startExits: number = 0
+        if (animalCol > 0        && "-LF".includes(lines[animalRow][animalCol-1])) { startExits |= 1 }
+        if (animalCol < width-1  && "-J7".includes(lines[animalRow][animalCol+1])) { startExits |= 2 }
+        if (animalRow > 0        && "|7F".includes(lines[animalRow-1][animalCol])) { startExits |= 4 }
+        if (animalRow < height-1 && "|LJ".includes(lines[animalRow+1][animalCol])) { startExits |= 8 }
+        var startType: string = "???-?JL??7F?|???"[startExits]
+        console.log(`Starting point replaced with ${startType}`)
+        
+        //var debugAcc = ""
+        var totalInside = 0
+        for (let r = 0; r < lines.length; r++) {
+            var isInside: boolean = false
+            var lastElbow: string = "X"
+
+            for (let c = 0; c < lines[r].length; c++) {
+                var t = lines[r][c]
+                if (t == "S") {t = startType}
+                if (onlyGround) {
+                    if (t == ".") {
+                        t = (isInside ? "I" : "O")
+                    }
+                }
+                else {
+                    if (landscape[r][c] == Infinity) {
+                        t = (isInside ? "I" : "O")
+                    }
+                }
+                var f = t
+                if (landscape[r][c] != Infinity) {
+                    switch (t) {
+                        case "|": isInside = !isInside
+                                break
+                        case "F":
+                        case "7": if ("LJ".includes(lastElbow)) {isInside = !isInside}
+                                  lastElbow = (lastElbow == "X") ? t : "X"
+                                  break
+                        case "L":
+                        case "J": if ("F7".includes(lastElbow)) {isInside = !isInside}
+                                  lastElbow = (lastElbow == "X") ? t : "X"
+                                  break
+                    }
+                }
+                groundLabeled[r] += f
+                if (f == "I") {totalInside++}
             }
-            seq = seq.reverse()
-            var c: number = seq[seq.length-1] + continueSequence(seq)
-            console.log(`${seq}: ${c}`)
-            totalContinuations += c
-        })
+            debugAcc += groundLabeled[r] + "\n"
+        }
 
-        setResult2(totalContinuations.toString())
+        setResult2(totalInside.toString())
+        setDebugDisplay(debugAcc)
 
         // Part 2 end
         /*************************************************************/
