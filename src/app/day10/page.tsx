@@ -98,7 +98,9 @@ export default function Day09Component() {
         for (let i = 0; i < 1000000000 && fillDistanceOps.length > 0; i++)
         {
             var op = fillDistanceOps.shift()
-            fillDistanceMemo(op.r, op.c, op.fill)
+            if (op) {
+                fillDistanceMemo(op.r, op.c, op.fill)
+            }
 
             if (i % 100 == 0) {
                 console.log(fillDistanceOps.map((f: FillDistanceOperation) => (`${f.c}, ${f.r} -> ${f.fill}`)))
