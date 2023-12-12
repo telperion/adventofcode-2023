@@ -6,6 +6,8 @@ import React, { useEffect, useState } from 'react'
 import Link from 'next/link'
 import FileDrop from '../refs/filedrop'
 
+const verbose = false
+const LOOP_SENTINEL = 1000000
 
 class SpringRow {
     info: string
@@ -22,7 +24,7 @@ class SpringRow {
         this.ways = 0
     }
 
-    eval(verbose: boolean = false): boolean {
+    eval(): boolean {
         if (this.evaluated) {
             return true
         }
@@ -53,6 +55,81 @@ class SpringRow {
 }
 
 
+function calculateWays(sr: SpringRow, alreadySeen: Map<string, SpringRow> | undefined = undefined) {
+    var subRowStack = new Array<SpringRow>()
+    var subsetFront = new Array<SpringRow>()
+
+    // Traverse tree of subset tests top-down and build stack of operations.
+    subsetFront.push(sr)
+    for (let i = 0; i < LOOP_SENTINEL && subsetFront.length > 0; i++) {
+        var srTest: SpringRow = subsetFront[0]
+        subsetFront.splice(0, 1)
+        var subsetTest: Array<SpringRow> = []
+        
+        // Next space is, or could be, empty
+        if(".?".includes(srTest.info[0])) {
+            subsetTest.push(new SpringRow(
+                srTest.info.substr(1),              // Copy the remaining spaces (one consumed)
+                [...srTest.groups]                  // Copy all remaining groups (none consumed)
+            ))
+            if (verbose) {console.log(`${srTest}: testing after skipping empty space`)}
+        }
+        // Next space is, or could be, the beginning of a group
+        if (srTest.groups.length > 0) {
+            // Need to make sure the whole group is present.
+            // Could be some combo of # and ?
+            // Must be followed by either a . or ?
+            var canMakeGroup = true
+            
+            for (let i = 0; i < srTest.groups[0]; i++) {
+                if (!"#?".includes(srTest.info[i])) {
+                    canMakeGroup = false
+                }
+            }
+            var groupClosed = (srTest.info.length == srTest.groups[0]) || ".?".includes(srTest.info[srTest.groups[0]])
+            canMakeGroup &&= groupClosed
+            
+            if (canMakeGroup) {
+                subsetTest.push(new SpringRow(
+                    srTest.info.substr(srTest.groups[0]+1), // Copy the remaining spaces (length of group consumed + empty space after)
+                    [...srTest.groups.slice(1)]             // Copy all remaining groups (one consumed)
+                ))
+
+                if (verbose) {console.log(`${srTest}: testing after skipping group of ${srTest.groups[0]}`)}
+            }
+            else {
+                if (verbose) {console.log(`${srTest}: couldn't make groups`)}
+            }
+        }
+        
+        // Alias any subset conditions we've already seen.
+        for (let ss of subsetTest) {
+            var ssAlias = ss
+            if (alreadySeen && alreadySeen.has(ss.toString())) {
+                // No sense re-evaluating this subset.
+                ssAlias = alreadySeen.get(ss.toString())!
+                if (verbose) {console.log(`${srTest}: already seen`)}
+            }
+            else {
+                // Need to chase this subset.
+                if (alreadySeen) {
+                    alreadySeen.set(ss.toString(), ss)
+                }
+                subsetFront.push(ssAlias)
+                if (verbose) {console.log(`${srTest}: first time seeing`)}
+            }
+            srTest.subsets.push(ssAlias)
+        }
+        subRowStack.push(srTest)
+    }
+
+    console.log(subRowStack)
+
+    // Evaluate tree nodes without recursion.
+    subRowStack.reverse().forEach((srTest) => {srTest.eval()})
+}
+
+
 export default function Day12Component() {
     const [data, setData] = useState<string>("")
     const [result1, setResult1] = useState<string>("")
@@ -64,7 +141,6 @@ export default function Day12Component() {
         lines.forEach((l) => (l.trim()))
         lines = lines.filter((l) => (l != ""))
         var debugAcc = ""
-        var verbose = false
 
         /*************************************************************/
         // Part 1 begin
@@ -85,94 +161,43 @@ export default function Day12Component() {
 
         var alreadySeen = new Map<string, SpringRow>()
         var rowResults = new Array<number>()
-        var totalRowResults = 0
+        var totalRowResults1 = 0
 
         rows.forEach((sr) => {
-            var subRowStack = new Array<SpringRow>()
-            var subsetFront = new Array<SpringRow>()
-            var totalThisRow = 0
+            calculateWays(sr, alreadySeen)
 
-            // Traverse tree of subset tests top-down and build stack of operations.
-            subsetFront.push(sr)
-            for (let i = 0; i < 100 && subsetFront.length > 0; i++) {
-                var srTest: SpringRow = subsetFront[0]
-                subsetFront.splice(0, 1)
-                var subsetTest: Array<SpringRow> = []
-                
-                // Next space is, or could be, empty
-                if(".?".includes(srTest.info[0])) {
-                    subsetTest.push(new SpringRow(
-                        srTest.info.substr(1),              // Copy the remaining spaces (one consumed)
-                        [...srTest.groups]                  // Copy all remaining groups (none consumed)
-                    ))
-                    if (verbose) {console.log(`${srTest}: testing after skipping empty space`)}
-                }
-                // Next space is, or could be, the beginning of a group
-                if (srTest.groups.length > 0) {
-                    // Need to make sure the whole group is present.
-                    // Could be some combo of # and ?
-                    // Must be followed by either a . or ?
-                    var canMakeGroup = true
-                    
-                    for (let i = 0; i < srTest.groups[0]; i++) {
-                        if (!"#?".includes(srTest.info[i])) {
-                            canMakeGroup = false
-                        }
-                    }
-                    var groupClosed = (srTest.info.length == srTest.groups[0]) || ".?".includes(srTest.info[srTest.groups[0]])
-                    canMakeGroup &&= groupClosed
-                    
-                    if (canMakeGroup) {
-                        subsetTest.push(new SpringRow(
-                            srTest.info.substr(srTest.groups[0]+1), // Copy the remaining spaces (length of group consumed + empty space after)
-                            [...srTest.groups.slice(1)]             // Copy all remaining groups (one consumed)
-                        ))
-
-                        if (verbose) {console.log(`${srTest}: testing after skipping group of ${srTest.groups[0]}`)}
-                    }
-                    else {
-                        if (verbose) {console.log(`${srTest}: couldn't make groups`)}
-                    }
-                }
-                
-                // Alias any subset conditions we've already seen.
-                for (let ss of subsetTest) {
-                    var ssAlias = ss
-                    if (alreadySeen.has(ss.toString())) {
-                        // No sense re-evaluating this subset.
-                        ssAlias = alreadySeen.get(ss.toString())!
-                        if (verbose) {console.log(`${srTest}: already seen`)}
-                    }
-                    else {
-                        // Need to chase this subset.
-                        alreadySeen.set(ss.toString(), ss)
-                        subsetFront.push(ssAlias)
-                        if (verbose) {console.log(`${srTest}: first time seeing`)}
-                    }
-                    srTest.subsets.push(ssAlias)
-                }
-                subRowStack.push(srTest)
-            }
-
-            console.log(subRowStack)
-
-            // Evaluate tree nodes without recursion.
-            subRowStack.reverse().forEach((srTest) => {srTest.eval(verbose)})
-            
             rowResults.push(sr.ways)
-            totalRowResults += sr.ways
+            totalRowResults1 += sr.ways
             console.log(`>>> ${sr}: ${sr.ways} ways to match`)
             debugAcc += `${sr}: ${sr.ways} ways to match\n`
         })
 
-        setResult1(totalRowResults.toString())
+        setResult1(totalRowResults1.toString())
         setDebugDisplay(debugAcc)
 
         // Part 1 end
         /*************************************************************/
         // Part 2 begin
 
-        //setResult2(totalDistance2.toString())
+        debugAcc = ""
+        rowResults = new Array<number>()
+        var totalRowResults2 = 0
+
+        rows.forEach((srFolded) => {
+            var sr = new SpringRow(
+                new Array<string>(5).fill(srFolded.info).join("?"),
+                Array(5).fill([...srFolded.groups]).flat()
+            )
+            console.log(sr)
+            calculateWays(sr, alreadySeen)
+            
+            rowResults.push(sr.ways)
+            totalRowResults2 += sr.ways
+            console.log(`>>> ${sr}: ${sr.ways} ways to match`)
+            debugAcc += `${sr}: ${sr.ways} ways to match\n`
+        })
+
+        setResult2(totalRowResults2.toString())
         setDebugDisplay(debugAcc)
 
         // Part 2 end
