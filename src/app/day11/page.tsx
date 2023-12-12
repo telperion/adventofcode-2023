@@ -53,8 +53,8 @@ function calcTotalIntergalacticDistance(field: Array<string>, mult: number): num
         }
     }
 
-    console.log(geRow)
-    console.log(geCol)
+    // console.log(geRow)
+    // console.log(geCol)
 
     // Per-pair calculation
     var totalDistance = 0
