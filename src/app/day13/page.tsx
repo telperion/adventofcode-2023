@@ -38,24 +38,38 @@ class Valley {
         })
     }
 
-    testSymmetry(horizontal: boolean): number {
+    testSymmetry(horizontal: boolean, findSmudge: boolean = false): number {
         var oriented = horizontal ? this.field : this.fieldFlip
         console.log(oriented)
 
         for (let i = 1; i < oriented.length; i++) {
+            var smudgesFound = 0
             var matching = true
             for (let j = 0; i + j < oriented.length && i - j - 1 >= 0; j++) {
                 if (oriented[i + j] != oriented[i - j - 1]) {
-                    matching = false
-                    break
+                    if (findSmudge) {
+                        for (let k = 0; k < oriented[i].length; k++) {
+                            if (oriented[i + j][k] != oriented[i - j - 1][k]) {
+                                smudgesFound++
+                            }
+                        }
+                        if (smudgesFound > 1) {
+                            matching = false
+                            break
+                        }
+                    }
+                    else {
+                        matching = false
+                        break
+                    }
                 }
             }
-            if (matching) {
-                console.log(`>>> symmetry across ${i}`)
+            if (matching && (!findSmudge || smudgesFound == 1)) {
+                console.log(`>>> symmetry across ${i} (find smudge: ${findSmudge})`)
                 return i
             }
         }
-        console.log(`!!! no symmetry found`)
+        console.log(`!!! no symmetry found (find smudge: ${findSmudge})`)
         return 0
     }
 }
@@ -86,20 +100,26 @@ export default function Day13Component() {
             lastBlank = nextBlank
         }
 
-        var totalValleyReflection = 0
+        var totalValleyReflection1 = 0
         valleys.forEach((v) => {
-            totalValleyReflection += v.testSymmetry(false)
-            totalValleyReflection += v.testSymmetry(true) * 100
+            totalValleyReflection1 += v.testSymmetry(false)
+            totalValleyReflection1 += v.testSymmetry(true) * 100
         })
 
-        setResult1(totalValleyReflection.toString())
+        setResult1(totalValleyReflection1.toString())
         setDebugDisplay(debugAcc)
 
         // Part 1 end
         /*************************************************************/
         // Part 2 begin
 
-        //setResult2(totalRowResults2.toString())
+        var totalValleyReflection2 = 0
+        valleys.forEach((v) => {
+            totalValleyReflection2 += v.testSymmetry(false, true)
+            totalValleyReflection2 += v.testSymmetry(true, true) * 100
+        })
+
+        setResult2(totalValleyReflection2.toString())
         setDebugDisplay(debugAcc)
 
         // Part 2 end
