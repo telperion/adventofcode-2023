@@ -7,13 +7,13 @@ import Link from 'next/link'
 import FileDrop from '../refs/filedrop'
 
 const verbose = false
-const LOOP_SENTINEL = 1000000
+const LOOP_SENTINEL = 1000000000
 
 enum TiltDirection {
-    EAST,
-    NORTH,
-    WEST,
-    SOUTH
+    WEST = 0,
+    SOUTH = 1,
+    EAST = 2,
+    NORTH = 3
 }
 
 function swap(base: string, index: number, replacement: string): string {
@@ -22,35 +22,38 @@ function swap(base: string, index: number, replacement: string): string {
 
 class Mirror {
     field: Array<string>
-    flipped: boolean        // Across X = Y.
 
-    constructor(f: Array<string> | null = null, td: TiltDirection = TiltDirection.NORTH) {
+    constructor(f: Array<string> | null = null) {
         this.field = []
-        this.flipped = (td == TiltDirection.NORTH || td == TiltDirection.SOUTH)
 
         if (f) {
-            this.fill(f)
+            f.forEach((l) => {
+                this.field.push(l.split("").join(""))
+            })
         }
     }
 
-    fill(lines: Array<string>) {
-        this.field = []
-        lines.forEach((l) => {
-            if (this.flipped) {
-                if (this.field.length == 0) {
-                    this.field = new Array<string>(l.length).fill("")
-                }
-                for (let i = 0; i < l.length; i++) {
-                    this.field[i] += l[i]
-                }
-            }
-            else {
-                this.field.push(l.split("").join(""))
-            }
+    rotate(): Mirror {
+        // HACK(ish): why doesn't this work when I try to store the results in the original field
+
+        // Turns are clockwise 90 degrees.
+        var m = new Mirror()
+        this.field.forEach((l) => {
+            m.field.push(l.split("").join(""))
         })
+
+        m.field = new Array<string>(this.field.length).fill("")
+        for (let l of this.field) {
+            for (let i = 0; i < l.length; i++) {
+                m.field[i] = l[i] + m.field[i]
+            }
+        }
+
+        return m
     }
 
-    tilt(direction: TiltDirection = TiltDirection.WEST) {
+    tilt() {
+        // To the west.
         var m = this.field
 
         if (m.length == 0) {
@@ -80,7 +83,8 @@ class Mirror {
         }
     }
 
-    score(direction: TiltDirection = TiltDirection.NORTH): number {
+    score(): number {
+        // To the west.
         var totalScore = 0
         for (let i = 0; i < this.field.length; i++) {
             for (let j = 0; j < this.field[i].length; j++) {
@@ -90,6 +94,10 @@ class Mirror {
             }
         }
         return totalScore
+    }
+
+    toString(): string {
+        return this.field.join("\n")
     }
 }
 
@@ -119,21 +127,61 @@ export default function Day14Component() {
             lastBlank = nextBlank
         }
 
-        var totalMirrorScore = 0
-        mirrors.forEach((v) => {
+        var totalMirrorScore1 = 0
+        mirrors.forEach((m) => {
+            var v = new Mirror(m.field)
+
+            // North in my algorithms is leftward lol
+            v = v.rotate()
+            v = v.rotate()
+            v = v.rotate()
             v.tilt()
-            console.log(v.field)
-            totalMirrorScore += v.score()
+            console.log(`One turn: ${v.score()}\n\n<-- N\n${v}`)
+            totalMirrorScore1 += v.score()
         })
 
-        setResult1(totalMirrorScore.toString())
+        setResult1(totalMirrorScore1.toString())
         setDebugDisplay(debugAcc)
 
         // Part 1 end
         /*************************************************************/
-        // Part 2 begin
+        // Part 2 begin        
 
-        //setResult2(totalValleyReflection2.toString())
+        var totalMirrorScore2 = 0
+        mirrors.forEach((m) => {
+            var v = new Mirror(m.field)
+            var alreadySeen = new Map<string, number>()
+
+            // North in my algorithms is leftward lol
+            v = v.rotate()
+            v = v.rotate()
+            v = v.rotate()
+            console.log(v)
+            for (let i = 1; i <= LOOP_SENTINEL; i++) {
+                for (let j = 0; j < 4; j++) {
+                    v.tilt()
+                    v = v.rotate()
+                    //console.log(`${i}.${j}:\n${v.field.join("\n")}`)
+                }
+                //console.log(`${i}: ${v.score()}\n${v}`)
+                var vs = v.toString()
+                if (alreadySeen.has(vs)) {
+                    var lastSeen = alreadySeen.get(vs)!
+                    console.log(`>>> ${i} == ${lastSeen}`)
+                    // Fast-forward this mini-cycle
+                    var miniCycle = i - lastSeen
+                    i += miniCycle * Math.floor((LOOP_SENTINEL - i) / miniCycle)
+                    console.log(`>>> Skipped forward to ${i}`)
+                }
+                else {
+                    alreadySeen.set(vs, i)
+                }
+            }
+            console.log(`${LOOP_SENTINEL} cycles: ${v.score()}\n\n<-- N\n${v}`)
+            totalMirrorScore2 += v.score()
+        })
+
+        setResult2(totalMirrorScore2.toString())
         setDebugDisplay(debugAcc)
 
         // Part 2 end
