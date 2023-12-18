@@ -6,7 +6,7 @@ import React, { useEffect, useState } from 'react'
 import Link from 'next/link'
 import FileDrop from '../refs/filedrop'
 
-const verbose = true
+const verbose = false
 const LOOP_SENTINEL = 1000000
 
 class Beam {
@@ -63,7 +63,7 @@ class Grid {
         // Change direction if necessary.
         for (let i = this.beams.length - 1; i >= 0; i--) {
             var b = this.beams[i]
-            var x = this.field[b.row][b.col]
+            var x = this.field[b.row] ? this.field[b.row][b.col] : undefined
 
             switch(x) {
                 // If the beam encounters empty space (.),
@@ -126,9 +126,9 @@ class Grid {
         }
     }
 
-    cast(): number {
+    cast(entry: Beam): number {
         var seen = Array<string>()
-        this.beams.push(new Beam(0, -1, 0b01))
+        this.beams.push(entry)
         for (let i = 0; i < LOOP_SENTINEL && this.beams.length > 0; i++) {
             this.step()
 
@@ -166,7 +166,7 @@ export default function Day16Component() {
         var totalEnergized = 0
         if (lines.length > 0) {
             var heating = new Grid(lines)
-            totalEnergized = heating.cast()
+            totalEnergized = heating.cast(new Beam(0, -1, 0b01))
         }
         setResult1(totalEnergized.toString())
         setDebugDisplay(debugAcc)
@@ -175,7 +175,28 @@ export default function Day16Component() {
         /*************************************************************/
         // Part 2 begin
 
-        setResult2(totalEnergized.toString())
+        var maxEnergized = 0
+        var edgeEntries = Array<Beam>()
+        if (lines.length > 0) {
+            for (let r = 0; r < lines.length; r++) {
+                // Horizontal entries
+                edgeEntries.push(new Beam(r, -1,              0b01))
+                edgeEntries.push(new Beam(r, lines[0].length, 0b00))
+            }
+            for (let c = 0; c < lines[0].length; c++) {
+                // Horizontal entries
+                edgeEntries.push(new Beam(-1,           c, 0b11))
+                edgeEntries.push(new Beam(lines.length, c, 0b10))
+            }
+            edgeEntries.forEach((b) => {
+                var heating = new Grid(lines)
+                var energized = heating.cast(new Beam(b.row, b.col, b.dir))
+                console.log(`${b}: ${energized}`)
+                maxEnergized = Math.max(maxEnergized, energized)
+            })
+        }
+
+        setResult2(maxEnergized.toString())
         setDebugDisplay(debugAcc)
 
         // Part 2 end
