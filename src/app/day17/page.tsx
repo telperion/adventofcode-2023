@@ -35,19 +35,18 @@ class CrucibleStep {
     }
 
     toString(): string {
-        return `@${this.row.toString().padStart(3)}R, ${this.col.toString().padStart(3)}C ${"<>^v"[this.dir]} (--${this.lin})`
+        return `@${this.row.toString().padStart(3)}R, ${this.col.toString().padStart(3)}C ${"<>^v"[this.dir]} -${this.lin.toString().padStart(2)}`
     }
 }
 
 class CruciblePath {
-    static maxLinear: number = 3
     path: Array<CrucibleStep>
     cost: number
 
     constructor(p: Array<CrucibleStep> = [], c: number = 0) {
         this.path = new Array<CrucibleStep>()
         for (let s of p) {
-            this.path.push(CrucibleStep.copy(s))
+            this.path.push(s)
         }
         this.cost = c
     }
@@ -66,8 +65,9 @@ class Grid {
     paths: Array<CruciblePath>
     memos: Map<string, number>
     bests: Map<string, CruciblePath>
+    ultra: boolean
 
-    constructor(f: Array<string> = []) {
+    constructor(f: Array<string> = [], u: boolean = false) {
         this.field  = new Array<Array<number>>()
         for (let l of f) {
             this.field.push(l.split("").map((c) => (parseInt(c))))
@@ -75,6 +75,7 @@ class Grid {
         this.paths = new Array<CruciblePath>()
         this.memos = new Map<string, number>()
         this.bests = new Map<string, CruciblePath>()
+        this.ultra = u
     }
 
     inbounds(r: number, c: number) {
@@ -102,7 +103,7 @@ class Grid {
             }
 
             var x = this.field[s.row][s.col]!
-            p.path.push(CrucibleStep.copy(s))
+            p.path.push(s)
             p.cost += x
 
             var sHash = s.toString()
@@ -117,18 +118,20 @@ class Grid {
             this.bests.set(sHash, new CruciblePath(p.path, p.cost))
 
             // Next steps?
-            if (s.lin < CruciblePath.maxLinear) {
+            if (s.lin < (this.ultra ? 10 : 3)) {
                 // Forward only if we haven't traveled N-in-a-row
-                var forward = new CruciblePath(p.path, p.cost)
-                this.paths.push(forward)
+                this.paths.push(p)
             }
-            for (let lr of [0, 1]) {
-                // Examine left turn and right turn.
-                var turnPath = new CruciblePath(p.path, p.cost)
-                var nextStep = turnPath.path[turnPath.path.length-1]
-                nextStep.dir = nextStep.dir ^ 0b10 ^ lr     // verticality swap, need both of +/-
-                nextStep.lin = 0
-                this.paths.push(turnPath)
+            if (s.lin >= (this.ultra ? 4 : 0)) {
+                for (let lr of [0, 1]) {
+                    // Examine left turn and right turn.
+                    var turnPath = new CruciblePath(p.path, p.cost)
+                    var nextStep = CrucibleStep.copy(turnPath.path.pop()!)
+                    nextStep.dir = nextStep.dir ^ 0b10 ^ lr     // verticality swap, need both of +/-
+                    nextStep.lin = 0
+                    turnPath.path.push(nextStep)
+                    this.paths.push(turnPath)
+                }
             }
         }
 
@@ -143,33 +146,51 @@ class Grid {
     }
 
     cast(entry: CrucibleStep, exit: CrucibleStep): number {
-        this.paths.push(new CruciblePath([entry]))
+        for (let d = 0; d < 4; d++) {
+            var s = CrucibleStep.copy(entry)
+            s.dir = d
+            this.paths.push(new CruciblePath([s]))
+        }
+
         for (let i = 0; i < LOOP_SENTINEL && this.paths.length > 0; i++) {
             this.step()
         }
 
         if (verbose) {
             Array.from(this.memos.keys())
+                .filter((s) => (
+                    s.substring(0, 11) == exit.toString().substring(0, 11)
+                ))
                 .sort((a, b) => (a > b ? 1 : -1))
                 .forEach((s) => {
                     console.log(`${s}: ${this.memos.get(s)}`)
                 })
         }
 
+        /*
         var exitPath = Array.from(this.bests.values())
             .filter((p) => (
                 p.path[p.path.length-1].row == exit.row &&
                 p.path[p.path.length-1].col == exit.col
             ))
             .sort((a, b) => (a.cost - b.cost))
+        */
+        var exitPath = Array.from(this.memos.keys())
+            .filter((s) => (
+                s.substring(0, 11) == exit.toString().substring(0, 11)
+            ))
+            .filter((s) => (
+                parseInt(s.substring(15, 17).trim()) >= (this.ultra ? 4 : 0)
+            ))
+            .sort((a, b) => (this.memos.get(a)! - this.memos.get(b)!))
         console.log(exitPath)
         if (exitPath.length == 0) {
             console.log(`No path reaches ${exit}`)
             return Infinity
         }
         else {
-            console.log(`Best path that reaches ${exit}:\n${exitPath[0].toString()}`)
-            return exitPath[0].cost || Infinity
+            console.log(`Best path that reaches ${exit}:\n${this.bests.get(exitPath[0].toString())}`)
+            return this.memos.get(exitPath[0]) || Infinity
         }
     }
 }
@@ -190,45 +211,32 @@ export default function Day16Component() {
         /*************************************************************/
         // Part 1 begin
 
-        var minHeatLoss = 0
+        var minHeatLoss1 = 0
+        /*
         if (lines.length > 0) {
-            var heating = new Grid(lines)
-            minHeatLoss = heating.cast(
-                new CrucibleStep(0, -1, 0b01, -1),
+            var heating = new Grid(lines, false)
+            minHeatLoss1 = heating.cast(
+                new CrucibleStep(0, 0, 0b01, 0),
                 new CrucibleStep(lines.length-1, lines[0].length-1, 0b01)
-            ) - heating.field[0][0]
+            )
         }
-        setResult1(minHeatLoss.toString())
+        */
+        setResult1(minHeatLoss1.toString())
         setDebugDisplay(debugAcc)
 
         // Part 1 end
         /*************************************************************/
         // Part 2 begin
 
-        var minHeatLoss = 0
-        /*
-        var edgeEntries = Array<Beam>()
+        var minHeatLoss2 = 0
         if (lines.length > 0) {
-            for (let r = 0; r < lines.length; r++) {
-                // Horizontal entries
-                edgeEntries.push(new Beam(r, -1,              0b01))
-                edgeEntries.push(new Beam(r, lines[0].length, 0b00))
-            }
-            for (let c = 0; c < lines[0].length; c++) {
-                // Horizontal entries
-                edgeEntries.push(new Beam(-1,           c, 0b11))
-                edgeEntries.push(new Beam(lines.length, c, 0b10))
-            }
-            edgeEntries.forEach((b) => {
-                var heating = new Grid(lines)
-                var energized = heating.cast(new Beam(b.row, b.col, b.dir))
-                console.log(`${b}: ${energized}`)
-                maxEnergized = Math.max(maxEnergized, energized)
-            })
+            var heating = new Grid(lines, true)
+            minHeatLoss2 = heating.cast(
+                new CrucibleStep(0, 0, 0b01, 0),
+                new CrucibleStep(lines.length-1, lines[0].length-1, 0b01)
+            )
         }
-        */
-
-        setResult2(minHeatLoss.toString())
+        setResult1(minHeatLoss2.toString())
         setDebugDisplay(debugAcc)
 
         // Part 2 end
