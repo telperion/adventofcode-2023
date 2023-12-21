@@ -7,7 +7,7 @@ import Link from 'next/link'
 import FileDrop from '../refs/filedrop'
 
 const verbose = true
-const LOOP_SENTINEL = 100
+const LOOP_SENTINEL = 1000
 
 class CrucibleStep {
     row: number
@@ -47,7 +47,7 @@ class CruciblePath {
     constructor(p: Array<CrucibleStep> = [], c: number = 0) {
         this.path = new Array<CrucibleStep>()
         for (let s of p) {
-            this.path.push(new CrucibleStep(s.row, s.col, s.dir, s.lin))
+            this.path.push(CrucibleStep.copy(s))
         }
         this.cost = c
     }
@@ -85,9 +85,10 @@ class Grid {
         // Assess new cost and step if it's worth it.
         for (let i = this.paths.length - 1; i >= 0; i--) {
             var p = this.paths[i]
+            this.paths.splice(i, 1)
+
             if (p.path.length == 0) {
-                // :crab: path was never here :crab: 
-                this.paths.splice(i, 1)
+                // :crab: path was never here :crab:
                 continue
             }
 
@@ -97,39 +98,36 @@ class Grid {
             if (!this.inbounds(s.row, s.col)) {
                 // :crab: path is gone :crab: 
                 // TODO: this may be an end condition
-                this.paths.splice(i, 1)
                 continue
             }
 
             var x = this.field[s.row][s.col]!
+            p.path.push(CrucibleStep.copy(s))
             p.cost += x
+
             var sHash = s.toString()
             var bestCost = this.memos.get(sHash) || Infinity
 
             if (bestCost <= p.cost) {
                 // :crab: path is too expensive :crab:
-                this.paths.splice(i, 1)
                 continue
             }
-
+            
             this.memos.set(sHash, p.cost)
-            this.bests.set(sHash, p)
+            this.bests.set(sHash, new CruciblePath(p.path, p.cost))
 
             // Next steps?
-            this.paths.splice(i, 1)
             if (s.lin < CruciblePath.maxLinear) {
                 // Forward only if we haven't traveled N-in-a-row
                 var forward = new CruciblePath(p.path, p.cost)
-                forward.path.push(CrucibleStep.copy(s))
                 this.paths.push(forward)
             }
             for (let lr of [0, 1]) {
                 // Examine left turn and right turn.
                 var turnPath = new CruciblePath(p.path, p.cost)
-                var nextStep = CrucibleStep.copy(s)
-                nextStep.dir = nextStep.dir ^ 0b10 ^ lr         // verticality swap, need both of +/-
+                var nextStep = turnPath.path[turnPath.path.length-1]
+                nextStep.dir = nextStep.dir ^ 0b10 ^ lr     // verticality swap, need both of +/-
                 nextStep.lin = 0
-                turnPath.path.push(nextStep)
                 this.paths.push(turnPath)
             }
         }
@@ -152,7 +150,7 @@ class Grid {
 
         if (verbose) {
             Array.from(this.memos.keys())
-                .sort((a, b) => (a < b ? 1 : -1))
+                .sort((a, b) => (a > b ? 1 : -1))
                 .forEach((s) => {
                     console.log(`${s}: ${this.memos.get(s)}`)
                 })
