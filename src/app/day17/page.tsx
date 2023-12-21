@@ -212,7 +212,6 @@ export default function Day16Component() {
         // Part 1 begin
 
         var minHeatLoss1 = 0
-        /*
         if (lines.length > 0) {
             var heating = new Grid(lines, false)
             minHeatLoss1 = heating.cast(
@@ -220,7 +219,6 @@ export default function Day16Component() {
                 new CrucibleStep(lines.length-1, lines[0].length-1, 0b01)
             )
         }
-        */
         setResult1(minHeatLoss1.toString())
         setDebugDisplay(debugAcc)
 
@@ -236,7 +234,7 @@ export default function Day16Component() {
                 new CrucibleStep(lines.length-1, lines[0].length-1, 0b01)
             )
         }
-        setResult1(minHeatLoss2.toString())
+        setResult2(minHeatLoss2.toString())
         setDebugDisplay(debugAcc)
 
         // Part 2 end
@@ -246,6 +244,7 @@ export default function Day16Component() {
     return (
         <div className="h-screen flex flex-col items-center justify-center gap-6">
             <div className="flex text-3xl text-center">{title}</div>
+            <div className="flex text-md text-center">(it's very slow sorry)</div>
             <FileDrop passData={(d: string) => {setData(d)}} />
             <div className="flex basis-1/12 flex-row items-center justify-center w-3/4">
                 <div className="min-w-fit p-6">Result 1:&nbsp;</div>
