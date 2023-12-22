@@ -16,10 +16,13 @@ type DigStep = {
     len: number,
     color: string
 }
+const ds = (s: DigStep) => (`${"<>^v"[s.dir]} ${s.len} (#${s.color})`)
+
 type Point = {
     row: number,
     col: number
 }
+
 type Segment = {
     a: Point,
     b: Point,
@@ -30,11 +33,13 @@ class Lagoon {
     plan: Array<DigStep>
     verts: Array<Point>
     trench: Array<Segment>
+    winding: boolean            // CCW (DRUL) = false, CW (RDLU) = true
 
     constructor() {
         this.plan = []
         this.verts = []
         this.trench = []
+        this.winding = false
     }
 
     static dig(p: Array<DigStep>): Lagoon {
@@ -64,24 +69,49 @@ class Lagoon {
             v.col -= minCol
         }
 
+        // Winding detection
+        for (let t of l.trench) {
+            if ((t.a.row == 0) && (t.b.row == 0)) {
+                // Are top edge segments going left or right?
+                l.winding = (t.b.col > t.a.col)
+                break
+            }
+        }
+
         if (verbose) {
             for (let t of l.trench) {
                 console.log(`@${t.a.row}R, ${t.a.col}C -> ${t.b.row}R, ${t.b.col}C (#${t.color})`)
             }
+            console.log(`Winding ${l.winding ? "CW" : "CCW"}`)
         }
 
         return l
     }
 
     area(): number {
+        var horizontalSteps = this.trench.filter((t) => (t.a.row == t.b.row))
+        var rowEvents = horizontalSteps.reduce((a: Array<number>, t) => {
+            if (!a.includes(t.a.row)) {
+                a.push(t.a.row)
+                a.push(t.a.row)
+            }
+            return a
+        }, []).sort((a, b) => (a - b)).slice(1, -1)
+        
         var totalInternalArea = 0
-        var maxRow = this.verts.reduce((m, v) => (Math.max(m, v.row)), 0)
-        var maxCol = this.verts.reduce((m, v) => (Math.max(m, v.col)), 0)
-        for (let r = 0; r <= maxRow; r++) {
+
+        for (let r = 1; r < rowEvents.length; r++) {
+            var p = rowEvents[r-1]
+            var q = rowEvents[r]
+
+            var testRow = 0.5 * (p + q)
+            var swathHeight = (p == q) ? 1 : (q - p - 1)
+            var desc = `${r} (${p}~${q})`
+
             var segs = this.trench.filter((t) => {
                 var lo = Math.min(t.a.row, t.b.row)
                 var hi = Math.max(t.a.row, t.b.row)
-                return (r >= lo && r <= hi)
+                return (testRow >= lo && testRow <= hi)
             }).sort((ta, tb) => (ta.a.col + ta.b.col - tb.a.col - tb.b.col))
 
             var insideDir = undefined
@@ -93,28 +123,28 @@ class Lagoon {
                     if (typeof insideDir == "undefined") {
                         // First vertical crossing.
                         insideDir = (s.b.row > s.a.row)
-                        console.log(`${r}: insideDir = ${insideDir} @${s.a.col}`)
+                        console.log(`${desc}: insideDir = ${insideDir} @${s.a.col}`)
                         inside = true
                     }
 
                     if (insideDir == (s.b.row > s.a.row)) {
                         // Stepping inside.
-                        console.log(`${r}:  inside  [${s.a.col}~`)
+                        console.log(`${desc}:  inside  [${s.a.col}~`)
                         lastCol = s.a.col
                     }
                     else {
                         // Stepping outside.
-                        var addArea = Math.max(s.a.col - lastCol - 1, 0)
-                        console.log(`${r}: contains [${lastCol}~${s.a.col}] +${addArea}`)
+                        var addArea = Math.max(s.a.col - lastCol - 1, 0) * swathHeight
+                        console.log(`${desc}: contains [${lastCol}~${s.a.col}] +${addArea}`)
                         totalThisRow += addArea
                     }
                 }
                 else {
-                    console.log(`${r}:  border  [${s.a.col}~${s.b.col}]`)
+                    console.log(`${desc}:  border  [${s.a.col}~${s.b.col}]`)
                     lastCol = Math.max(s.a.col, s.b.col)
                 }
             }
-            console.log(`${r}: total area ${totalThisRow}`)
+            console.log(`${desc}: total area ${totalThisRow}`)
             totalInternalArea += totalThisRow
         }
 
@@ -139,7 +169,7 @@ export default function Day18Component() {
         /*************************************************************/
         // Part 1 begin
 
-        var lagoonArea = 0
+        var lagoonArea1 = 0
         var digPlan: Array<DigStep> = []
         lines.forEach((l) => {
             var m = l.match(/(\w) (\d+) (\S+)/)
@@ -152,16 +182,29 @@ export default function Day18Component() {
             }
         })
         var lagoon = Lagoon.dig(digPlan)
-        lagoonArea = lagoon.area()
-        setResult1(lagoonArea.toString())
+        lagoonArea1 = lagoon.area()
+        setResult1(lagoonArea1.toString())
         setDebugDisplay(debugAcc)
 
         // Part 1 end
         /*************************************************************/
         // Part 2 begin
 
-        var minHeatLoss2 = 0
-        setResult2(minHeatLoss2.toString())
+        var lagoonArea2 = 0
+        var digPlan: Array<DigStep> = []
+        lines.forEach((l) => {
+            var m = l.match(/(\w) (\d+) (\S+)/)
+            if (m) {
+                digPlan.push({
+                    dir: [1, 3, 0, 2][parseInt(m[3].substring(7, 8))],
+                    len: parseInt(m[3].substring(2, 7), 16),
+                    color: m[3].substring(2, 8)
+                })
+            }
+        })
+        var lagoon = Lagoon.dig(digPlan)
+        lagoonArea2 = lagoon.area()
+        setResult2(lagoonArea2.toString())
         setDebugDisplay(debugAcc)
 
         // Part 2 end
