@@ -259,7 +259,7 @@ class Sorter {
 }
 
 
-export default function Day18Component() {
+export default function Day19Component() {
     const [data, setData] = useState<string>("")
     const [result1, setResult1] = useState<string>("")
     const [result2, setResult2] = useState<string>("")

@@ -1,0 +1,12 @@
+broadcaster -> a
+%a -> b, ai
+%b -> c, bi
+%c -> d, ci
+%d -> e, di
+%e -> ei
+&ai -> con
+&bi -> con
+&ci -> con
+&di -> con
+&ei -> con
+&con -> output
