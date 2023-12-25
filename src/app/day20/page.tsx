@@ -1,6 +1,7 @@
 "use client"
 
 const title = "Day 20: Pulse Propagation"
+const working = false
 
 import React, { useEffect, useState } from 'react'
 import Link from 'next/link'
@@ -288,7 +289,7 @@ export default function Day20Component() {
     
     return (
         <div className="h-screen flex flex-col items-center justify-center gap-6">
-            <div className="flex text-3xl text-center">{title}</div>
+            <div className={"flex text-3xl text-center" + (working ? "" : " line-through text-rose-500")}>{title}</div>
             <FileDrop passData={(d: string) => {setData(d)}} />
             <div className="flex basis-1/12 flex-row items-center justify-center w-3/4">
                 <div className="min-w-fit p-6">Result 1:&nbsp;</div>
